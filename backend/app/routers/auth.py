@@ -3,8 +3,11 @@ from datetime import timedelta
 from app.models.user import UserLogin, UserCreate, UserResponse
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.config import settings
-from app.db.dynamodb import get_user_by_email, create_user
+from app.db.dynamodb import get_user_by_email, create_user, update_user, get_user_by_id, get_user_by_id_with_secret
 from app.core.dependencies import get_current_user
+from pydantic import BaseModel
+from typing import Optional
+from botocore.exceptions import ClientError
 
 router = APIRouter()
 
@@ -64,4 +67,27 @@ async def login(credentials: UserLogin):
 async def get_current_user_info(current_user = Depends(get_current_user)):
     """Get current user information."""
     return current_user
+
+
+
+class ChangePassword(BaseModel):
+    current_password: str
+    new_password: str
+
+@router.post("/change-password")
+async def change_password(payload: ChangePassword, current_user = Depends(get_current_user)):
+    """User self-service change password."""
+    # fetch full user including password_hash
+    user = await get_user_by_id_with_secret(current_user["user_id"])
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if not verify_password(payload.current_password, user["password_hash"]):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+
+    await update_user(current_user["user_id"], {
+        "password_hash": get_password_hash(payload.new_password),
+        "must_change_password": False
+    })
+    return {"message": "Password changed successfully"}
 

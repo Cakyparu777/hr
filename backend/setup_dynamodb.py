@@ -5,6 +5,9 @@ Run this script once to create the necessary tables.
 import boto3
 from botocore.exceptions import ClientError
 from app.core.config import settings
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Initialize DynamoDB client
 dynamodb_kwargs = {

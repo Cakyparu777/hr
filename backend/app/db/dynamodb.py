@@ -6,20 +6,14 @@ import uuid
 from app.core.config import settings
 from app.models.user import UserRole
 
+
 # Initialize DynamoDB client
 dynamodb_kwargs = {
     'region_name': settings.AWS_REGION,
+    'endpoint_url': settings.DYNAMODB_ENDPOINT_URL,
+    'aws_access_key_id': 'dummy',
+    'aws_secret_access_key': 'dummy'
 }
-
-# Add credentials if provided
-if settings.AWS_ACCESS_KEY_ID:
-    dynamodb_kwargs['aws_access_key_id'] = settings.AWS_ACCESS_KEY_ID
-if settings.AWS_SECRET_ACCESS_KEY:
-    dynamodb_kwargs['aws_secret_access_key'] = settings.AWS_SECRET_ACCESS_KEY
-
-# Add endpoint URL for DynamoDB Local if provided
-if settings.DYNAMODB_ENDPOINT_URL:
-    dynamodb_kwargs['endpoint_url'] = settings.DYNAMODB_ENDPOINT_URL
 
 dynamodb = boto3.resource('dynamodb', **dynamodb_kwargs)
 
@@ -71,6 +65,7 @@ async def create_user(user_data: dict) -> dict:
         "email": user_data["email"],
         "role": user_data["role"],
         "password_hash": user_data["password_hash"],
+        "must_change_password": bool(user_data.get("must_change_password", False)),
         "created_at": datetime.utcnow().isoformat()
     }
     users_table.put_item(Item=item)
@@ -160,6 +155,16 @@ async def delete_user(user_id: str) -> bool:
     except ClientError:
         return False
 
+async def get_user_by_id_with_secret(user_id: str) -> Optional[dict]:
+    """Get a user by ID, including secret fields like password_hash."""
+    try:
+        response = users_table.get_item(Key={"user_id": user_id})
+        if "Item" in response:
+            return response["Item"]  # do NOT pop password_hash
+        return None
+    except ClientError:
+        return None
+
 from decimal import Decimal
 
 # ... (rest of the imports)
@@ -242,6 +247,20 @@ async def get_timelogs_by_user(user_id: str, start_date: Optional[datetime] = No
             ExpressionAttributeValues=expression_values
         )
         return response.get("Items", [])
+
+async def get_timelogs_by_user_and_exact_time(user_id: str, start_time: datetime, end_time: datetime) -> List[dict]:
+    """Get time logs for a user within an exact start and end time."""
+    response = timelogs_table.query(
+        IndexName="user_id-index",
+        KeyConditionExpression="user_id = :user_id",
+        FilterExpression="start_time = :start_time AND end_time = :end_time",
+        ExpressionAttributeValues={
+            ":user_id": user_id,
+            ":start_time": start_time.isoformat(),
+            ":end_time": end_time.isoformat(),
+        }
+    )
+    return response.get("Items", [])
 
 async def get_all_timelogs(start_date: Optional[datetime] = None, 
                           end_date: Optional[datetime] = None,

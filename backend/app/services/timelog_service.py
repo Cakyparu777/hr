@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from app.core.config import settings
-from app.db.dynamodb import create_timelog, update_timelog, get_timelog_by_id, get_holidays_as_dates
+from app.db.dynamodb import create_timelog, update_timelog, get_timelog_by_id, get_holidays_as_dates, get_timelogs_by_user_and_exact_time, get_timelogs_by_user
 
 def calculate_hours(start_time: datetime, end_time: datetime, break_duration: float = 0.0) -> float:
     """Calculate total hours worked."""
@@ -13,15 +13,30 @@ def calculate_hours(start_time: datetime, end_time: datetime, break_duration: fl
     return max(0, round(total_hours, 2))
 
 async def is_overtime(total_hours: float, start_time: datetime) -> bool:
-    """Check if the hours worked exceed the overtime threshold or if it is a holiday."""
+    """Check overtime: weekends, holidays, or hours above threshold."""
     holidays = await get_holidays_as_dates()
     if start_time.date() in holidays:
+        return True
+    # Weekend (Saturday=5, Sunday=6)
+    if start_time.weekday() >= 5:
         return True
     return total_hours > settings.OVERTIME_THRESHOLD_HOURS
 
 async def create_time_entry(user_id: str, start_time: datetime, end_time: datetime, 
                            break_duration: float = 0.0, context: Optional[str] = None) -> dict:
     """Create a new time entry with automatic calculations."""
+    # Disallow duplicate exact time
+    existing_logs = await get_timelogs_by_user_and_exact_time(user_id, start_time, end_time)
+    if existing_logs:
+        raise ValueError("A time log with the exact start and end time already exists for this user.")
+
+    # Enforce max 1 log per day
+    day_start = datetime(start_time.year, start_time.month, start_time.day, 0, 0, 0)
+    day_end = day_start + timedelta(days=1) - timedelta(microseconds=1)
+    same_day_logs = await get_timelogs_by_user(user_id, start_date=day_start, end_date=day_end)
+    if same_day_logs:
+        raise ValueError("Only one time log is allowed per day.")
+
     total_hours = calculate_hours(start_time, end_time, break_duration)
     overtime = await is_overtime(total_hours, start_time)
     
@@ -50,7 +65,14 @@ async def update_time_entry(log_id: str, start_time: Optional[datetime] = None,
     start = start_time or datetime.fromisoformat(existing_log["start_time"])
     end = end_time or datetime.fromisoformat(existing_log["end_time"])
     break_dur = break_duration if break_duration is not None else existing_log.get("break_duration", 0.0)
-    
+
+    # Enforce max 1 log per day (exclude current log)
+    day_start = datetime(start.year, start.month, start.day, 0, 0, 0)
+    day_end = day_start + timedelta(days=1) - timedelta(microseconds=1)
+    same_day_logs = await get_timelogs_by_user(existing_log["user_id"], start_date=day_start, end_date=day_end)
+    if any(l["log_id"] != log_id for l in same_day_logs):
+        raise ValueError("Only one time log is allowed per day.")
+
     # Recalculate
     total_hours = calculate_hours(start, end, break_dur)
     overtime = await is_overtime(total_hours, start)

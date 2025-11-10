@@ -6,6 +6,9 @@ import sys
 import asyncio
 from app.db.dynamodb import create_user, get_user_by_email
 from app.core.security import get_password_hash
+from dotenv import load_dotenv
+
+load_dotenv()
 
 async def create_admin_user(email: str, password: str, name: str):
     """Create an admin user."""

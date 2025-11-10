@@ -8,6 +8,7 @@ from app.db.dynamodb import (
     update_user, delete_user, get_user_by_email
 )
 from app.db.dynamodb import create_audit_log
+from datetime import datetime
 
 router = APIRouter()
 
@@ -43,7 +44,8 @@ async def create_user_endpoint(user_data: UserCreate, current_user = Depends(get
         "name": user_data.name,
         "email": user_data.email,
         "role": user_data.role.value,
-        "password_hash": get_password_hash(user_data.password)
+        "password_hash": get_password_hash(user_data.password),
+        "must_change_password": True
     }
     
     user = await create_user(user_dict)
