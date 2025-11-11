@@ -1,71 +1,16 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+__pycache__
+*.pyc
+*.pyo
+*.pyd
 .Python
 venv/
 env/
-ENV/
 .venv
-
-# Testing
-.pytest_cache/
+*.egg-info
+.git
+.DS_Store
+*.log
+.env
+.pytest_cache
 .coverage
 htmlcov/
-*.cover
-.hypothesis/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Logs
-*.log
-logs/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Git
-.git/
-.gitignore
-
-# Documentation
-*.md
-!README.md
-
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
-
-# Deployment scripts (not needed in container)
-deploy-apprunner.sh
-apprunner-service-config.yaml
-DEPLOYMENT.md
-
-# Local scripts
-start_local.sh
-install-local.sh
-install-deps.sh
-
-# Debug scripts
-debug_overtime.py
-
-# Tests
-tests/
-
-# Build artifacts
-*.egg-info/
-dist/
-build/

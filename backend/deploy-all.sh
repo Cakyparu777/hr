@@ -167,6 +167,20 @@ else
     echo "To view logs:"
     echo "  aws logs tail /aws/apprunner/$APP_RUNNER_SERVICE/service --follow --region $AWS_REGION"
     echo ""
+    
+    # Get service URL
+    SERVICE_URL=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --region "$AWS_REGION" --query 'Service.ServiceUrl' --output text 2>/dev/null || echo "")
+    
+    if [ -n "$SERVICE_URL" ]; then
+        echo -e "${GREEN}Service URL: $SERVICE_URL${NC}"
+        echo ""
+        echo "📍 Access your backend:"
+        echo "   API: $SERVICE_URL"
+        echo "   Docs: $SERVICE_URL/docs"
+        echo "   Health: $SERVICE_URL/health"
+        echo ""
+    fi
+    
     echo -e "${YELLOW}⚠ SECRET_KEY: $SECRET_KEY${NC}"
     echo -e "${YELLOW}⚠ Make sure SECRET_KEY is set in App Runner environment variables!${NC}"
 fi

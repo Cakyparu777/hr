@@ -39,7 +39,7 @@ INSTANCE_ROLE_ARN=$(aws iam get-role --role-name AppRunnerInstanceRole --query '
 
 if [ -z "$ACCESS_ROLE_ARN" ] || [ -z "$INSTANCE_ROLE_ARN" ]; then
     echo -e "${YELLOW}⚠ IAM roles not found.${NC}"
-    echo "Please create them first using: CREATE_IAM_ROLES_CONSOLE_FIXED.md"
+    echo "Please create them first using: ../IAM_ROLES_SETUP.md"
     echo "Or run the IAM setup script if available."
     exit 1
 fi

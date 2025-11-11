@@ -48,7 +48,19 @@ A full-stack time tracking system for managing employee work hours, overtime, an
 └── docker-compose.yml     # Docker configuration
 ```
 
-## Setup Instructions
+## Deployment
+
+### EC2 Deployment (Recommended)
+
+See [EC2_DEPLOYMENT.md](./EC2_DEPLOYMENT.md) for detailed instructions on deploying to AWS EC2.
+
+**Quick Start**:
+1. Launch an EC2 instance (Ubuntu 20.04+)
+2. Run the setup script: `./backend/deploy-ec2.sh`
+3. Clone the repository and configure environment variables
+4. Deploy with Docker Compose: `docker-compose -f docker-compose.prod.yml up -d`
+
+### Local Development Setup
 
 ### Prerequisites
 
@@ -126,14 +138,25 @@ npm start
 
 The application will be available at `http://localhost:3000`
 
-### Docker Setup
+### Docker Setup (Local Development)
 
 1. Build and run with Docker Compose:
 ```bash
 docker-compose up --build
 ```
 
-This will start both backend and frontend services.
+This will start both backend and frontend services with DynamoDB Local.
+
+### Production Deployment (EC2)
+
+1. Use the production docker-compose file:
+```bash
+docker-compose -f docker-compose.prod.yml up -d --build
+```
+
+2. Configure environment variables in `.env.prod` (see `.env.prod.example`)
+3. Ensure DynamoDB tables are created in AWS
+4. Access the application at `http://your-ec2-ip`
 
 ## API Documentation
 
