@@ -17,7 +17,7 @@ async def get_summary_report(
     current_user = Depends(get_current_accountant_user)
 ):
     """Get summary statistics for time logs."""
-    logs = await get_all_timelogs(
+    logs, _ = await get_all_timelogs(
         start_date=start_date,
         end_date=end_date,
         user_id=user_id
@@ -33,11 +33,28 @@ async def get_summary_report(
         }
     
     total_hours = sum(float(log.get("total_hours", 0)) for log in logs)
+    # Use overtime_hours field if available, otherwise fall back to total_hours for overtime logs
+    total_overtime_hours = sum(
+        float(log.get("overtime_hours", log.get("total_hours", 0) if log.get("is_overtime", False) else 0))
+        for log in logs
+    )
     overtime_logs = [log for log in logs if log.get("is_overtime", False)]
-    total_overtime_hours = sum(float(log.get("total_hours", 0)) for log in overtime_logs)
     
-    # Calculate unique days
-    unique_days = len(set(log.get("start_time", "")[:10] for log in logs))
+    # Calculate unique days - handle both datetime objects and strings
+    unique_days_set = set()
+    for log in logs:
+        start_time = log.get("start_time")
+        if start_time:
+            if isinstance(start_time, datetime):
+                # If it's a datetime object, format it as YYYY-MM-DD
+                day_str = start_time.strftime("%Y-%m-%d")
+            elif isinstance(start_time, str):
+                # If it's a string, take first 10 characters
+                day_str = start_time[:10]
+            else:
+                continue
+            unique_days_set.add(day_str)
+    unique_days = len(unique_days_set)
     avg_hours = total_hours / unique_days if unique_days > 0 else 0
     
     return {
@@ -56,12 +73,12 @@ async def export_csv(
     current_user = Depends(get_current_accountant_user)
 ):
     """Export time logs to CSV."""
-    logs = await get_all_timelogs(
+    logs, _ = await get_all_timelogs(
         start_date=start_date,
         end_date=end_date,
         user_id=user_id
     )
-    users = await get_all_users()
+    users, _ = await get_all_users()
     user_map = {user["user_id"]: user["name"] for user in users}
     
     # Prepare data
@@ -96,12 +113,12 @@ async def export_excel(
     current_user = Depends(get_current_accountant_user)
 ):
     """Export time logs to Excel."""
-    logs = await get_all_timelogs(
+    logs, _ = await get_all_timelogs(
         start_date=start_date,
         end_date=end_date,
         user_id=user_id
     )
-    users = await get_all_users()
+    users, _ = await get_all_users()
     user_map = {user["user_id"]: user["name"] for user in users}
     
     # Prepare data
