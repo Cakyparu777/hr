@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS App Runner Service for Time Tracking Application'
+
+Parameters:
+  ECRRepositoryUri:
+    Type: String
+    Description: ECR Repository URI (e.g., 123456789012.dkr.ecr.us-east-1.amazonaws.com/time-tracking-backend)
+  
+  ECRImageTag:
+    Type: String
+    Default: latest
+    Description: Docker image tag
+  
+  AccessRoleArn:
+    Type: String
+    Description: ARN of the ECR access role (AppRunnerECRAccessRole)
+    Default: ''
+  
+  InstanceRoleArn:
+    Type: String
+    Description: ARN of the instance role (AppRunnerInstanceRole)
+    Default: ''
+  
+  SecretKey:
+    Type: String
+    NoEcho: true
+    Description: Secret key for JWT tokens
+  
+  Environment:
+    Type: String
+    Default: production
+    Description: Environment name
+  
+  AwsRegion:
+    Type: String
+    Default: us-east-1
+    Description: AWS Region
+  
+  ServiceName:
+    Type: String
+    Default: time-tracking-backend
+    Description: App Runner service name
+
+Resources:
+  AppRunnerService:
+    Type: AWS::AppRunner::Service
+    Properties:
+      ServiceName: !Ref ServiceName
+      SourceConfiguration:
+        ImageRepository:
+          ImageIdentifier: !Sub '${ECRRepositoryUri}:${ECRImageTag}'
+          ImageConfiguration:
+            Port: '8000'
+            RuntimeEnvironmentVariables:
+              - Name: ENVIRONMENT
+                Value: !Ref Environment
+              - Name: AWS_REGION
+                Value: !Ref AwsRegion
+              - Name: SECRET_KEY
+                Value: !Ref SecretKey
+              - Name: DYNAMODB_USERS_TABLE
+                Value: time_tracking_users
+              - Name: DYNAMODB_TIMELOGS_TABLE
+                Value: time_tracking_logs
+              - Name: DYNAMODB_AUDIT_TABLE
+                Value: time_tracking_audit
+              - Name: DYNAMODB_HOLIDAYS_TABLE
+                Value: time_tracking_holidays
+              - Name: DYNAMODB_LEAVE_REQUESTS_TABLE
+                Value: time_tracking_leave_requests
+          ImageRepositoryType: ECR
+          ImageRepositoryAccessRoleArn: !Ref AccessRoleArn
+      InstanceConfiguration:
+        Cpu: '1 vCPU'
+        Memory: '2 GB'
+        InstanceRoleArn: !Ref InstanceRoleArn
+      HealthCheckConfiguration:
+        Protocol: HTTP
+        Path: /health
+        Interval: 10
+        Timeout: 5
+        HealthyThreshold: 1
+        UnhealthyThreshold: 5
+      AutoDeploymentsEnabled: true
+
+Outputs:
+  ServiceUrl:
+    Description: App Runner Service URL
+    Value: !GetAtt AppRunnerService.ServiceUrl
+    Export:
+      Name: !Sub '${AWS::StackName}-ServiceUrl'
+  
+  ServiceArn:
+    Description: App Runner Service ARN
+    Value: !GetAtt AppRunnerService.ServiceArn
+    Export:
+      Name: !Sub '${AWS::StackName}-ServiceArn'
+

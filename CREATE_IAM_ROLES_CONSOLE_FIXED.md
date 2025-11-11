@@ -1,4 +1,4 @@
-# Create IAM Roles for App Runner - AWS Console Guide (FIXED)
+# Create IAM Roles for App Runner - AWS Console Guide
 
 This guide shows you how to create the required IAM roles for AWS App Runner using **Custom Trust Policy** (since App Runner might not appear in the service list).
 
