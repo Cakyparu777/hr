@@ -1,0 +1,32 @@
+version: 1.0
+runtime: docker
+build:
+  commands:
+    build:
+      - echo "Building Docker image from backend directory"
+      - cd backend
+      - docker build -f Dockerfile.prod -t app:latest .
+run:
+  runtime-version: latest
+  command: ./start_prod.sh
+  network:
+    port: 8000
+    env: PORT
+  env:
+    - name: PORT
+      value: "8000"
+    - name: ENVIRONMENT
+      value: "production"
+    - name: AWS_REGION
+      value: "us-east-1"
+    # Note: These should be set via App Runner environment variables in AWS Console
+    # SECRET_KEY - Set via App Runner console (required)
+    # AWS_ACCESS_KEY_ID - Set via App Runner console or use IAM role (optional - IAM role preferred)
+    # AWS_SECRET_ACCESS_KEY - Set via App Runner console or use IAM role (optional - IAM role preferred)
+    # DYNAMODB_USERS_TABLE - Set via App Runner console (default: time_tracking_users)
+    # DYNAMODB_TIMELOGS_TABLE - Set via App Runner console (default: time_tracking_logs)
+    # DYNAMODB_AUDIT_TABLE - Set via App Runner console (default: time_tracking_audit)
+    # DYNAMODB_HOLIDAYS_TABLE - Set via App Runner console (default: time_tracking_holidays)
+    # DYNAMODB_LEAVE_REQUESTS_TABLE - Set via App Runner console (default: time_tracking_leave_requests)
+    # CORS_ORIGINS - Set via App Runner console (comma-separated list of allowed origins)
+
