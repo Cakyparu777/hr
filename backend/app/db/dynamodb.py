@@ -15,10 +15,19 @@ logger = get_logger(__name__)
 # Initialize DynamoDB client
 dynamodb_kwargs = {
     'region_name': settings.AWS_REGION,
-    'endpoint_url': settings.DYNAMODB_ENDPOINT_URL,
-    'aws_access_key_id': 'dummy',
-    'aws_secret_access_key': 'dummy'
 }
+
+# Only set endpoint URL if provided (for local development)
+if settings.DYNAMODB_ENDPOINT_URL:
+    dynamodb_kwargs['endpoint_url'] = settings.DYNAMODB_ENDPOINT_URL
+    # Use dummy credentials for local DynamoDB
+    dynamodb_kwargs['aws_access_key_id'] = 'dummy'
+    dynamodb_kwargs['aws_secret_access_key'] = 'dummy'
+elif settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+    # Use provided credentials if available
+    dynamodb_kwargs['aws_access_key_id'] = settings.AWS_ACCESS_KEY_ID
+    dynamodb_kwargs['aws_secret_access_key'] = settings.AWS_SECRET_ACCESS_KEY
+# Otherwise, use IAM role credentials (default for App Runner/ECS)
 
 dynamodb = boto3.resource('dynamodb', **dynamodb_kwargs)
 

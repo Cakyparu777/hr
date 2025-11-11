@@ -25,7 +25,15 @@ class Settings(BaseSettings):
     RATE_LIMIT_AUTH_PER_MINUTE: int = 5  # Stricter for auth endpoints
     
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"]
+    # Can be set via environment variable as comma-separated list
+    # Example: CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://localhost:5173"
+    
+    def get_cors_origins(self) -> List[str]:
+        """Parse CORS origins from comma-separated string."""
+        if not self.CORS_ORIGINS:
+            return []
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
     
     # Environment
     ENVIRONMENT: str = "development"  # development, staging, production

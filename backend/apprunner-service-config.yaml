@@ -1,0 +1,38 @@
+# AWS App Runner Service Configuration
+# Use this file to create the App Runner service via AWS CLI
+# Command: aws apprunner create-service --cli-input-yaml file://apprunner-service-config.yaml
+
+ServiceName: time-tracking-backend
+SourceConfiguration:
+  ImageRepository:
+    ImageIdentifier: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/time-tracking-backend:latest
+    ImageConfiguration:
+      Port: "8000"
+      RuntimeEnvironmentVariables:
+        ENVIRONMENT: production
+        AWS_REGION: us-east-1
+        # Add these via AWS Console or update this file:
+        # SECRET_KEY: <generate-with-python-c-import-secrets-print-secrets-token-urlsafe-32>
+        # AWS_ACCESS_KEY_ID: <your-access-key>
+        # AWS_SECRET_ACCESS_KEY: <your-secret-key>
+        # DYNAMODB_USERS_TABLE: time_tracking_users
+        # DYNAMODB_TIMELOGS_TABLE: time_tracking_logs
+        # DYNAMODB_AUDIT_TABLE: time_tracking_audit
+        # DYNAMODB_HOLIDAYS_TABLE: time_tracking_holidays
+        # DYNAMODB_LEAVE_REQUESTS_TABLE: time_tracking_leave_requests
+        # CORS_ORIGINS: https://yourdomain.com,https://www.yourdomain.com
+    ImageRepositoryType: ECR
+    ImageRepositoryAccessRoleArn: arn:aws:iam::<AWS_ACCOUNT_ID>:role/service-role/AppRunnerECRAccessRole
+AutoDeploymentsEnabled: true
+InstanceConfiguration:
+  Cpu: 1 vCPU
+  Memory: 2 GB
+  InstanceRoleArn: arn:aws:iam::<AWS_ACCOUNT_ID>:role/service-role/AppRunnerInstanceRole
+HealthCheckConfiguration:
+  Protocol: HTTP
+  Path: /health
+  Interval: 10
+  Timeout: 5
+  HealthyThreshold: 1
+  UnhealthyThreshold: 5
+
